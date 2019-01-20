@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">ImageSearchApp</string>
+    <string name="title_image_detail">image Detail</string>
+</resources>
