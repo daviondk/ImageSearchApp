@@ -37,4 +37,5 @@ class ImageDetailActivity : AppCompatActivity() {
                 }
                 else -> super.onOptionsItemSelected(item)
             }
+
 }
