@@ -34,6 +34,7 @@ class DownloadTarget(private val name: String, private val loader: LoaderService
                 ostream.close()
                 val int = Intent(ImageDetailFragment.BROADCAST_ACTION)
                 int.putExtra(ImageDetailFragment.PARAM_STATUS, ImageDetailFragment.STATUS_FINISH)
+                int.putExtra(ImageDetailFragment.IMAGE_NAME, name)
                 loader.sendBroadcast(int)
                 Log.d(LOG_TAG, "Info broadcasted for image set")
                 loader.stopSelf()

@@ -24,6 +24,7 @@ class LoaderService : Service() {
     }
 
     override fun onDestroy() {
+        Picasso.get().cancelRequest(dw!!)
         super.onDestroy()
         Log.d(LOG_TAG, "onDestroyService")
     }
@@ -65,6 +66,7 @@ class LoaderService : Service() {
         } else {
             val int = Intent(ImageDetailFragment.BROADCAST_ACTION)
             int.putExtra(ImageDetailFragment.PARAM_STATUS, ImageDetailFragment.STATUS_FINISH)
+            int.putExtra(ImageDetailFragment.IMAGE_NAME, imageName)
             sendBroadcast(int)
         }
     }

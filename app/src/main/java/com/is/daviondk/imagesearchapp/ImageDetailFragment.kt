@@ -22,9 +22,6 @@ import java.io.File
 class ImageDetailFragment : Fragment() {
     private var item: ImageContent.ImageItem? = null
 
-    private lateinit var imageView: ImageView
-    private lateinit var link: String
-
     private val LOG_TAG = "fragmentLogs"
 
     lateinit var br: BroadcastReceiver
@@ -40,8 +37,8 @@ class ImageDetailFragment : Fragment() {
         br = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
                 val status = intent.getIntExtra(PARAM_STATUS, 0)
-
-                if (status == STATUS_FINISH) {
+                val loadedFile = intent.getStringExtra(IMAGE_NAME)
+                if (status == STATUS_FINISH && loadedFile == item?.download_link.hashCode().toString()) {
                     setImage()
                 }
             }
@@ -56,12 +53,9 @@ class ImageDetailFragment : Fragment() {
 
         item?.let {
             ContextCompat.checkSelfPermission(this.context!!, "INTERNET")
-
-            link = it.download_link
-            imageView = rootView.image_detail
-            imageView.setImageResource(R.drawable.progress_animation)
+            rootView.image_detail.setImageResource(R.drawable.progress_animation)
             val intent = Intent(context, LoaderService::class.java)
-            context?.startService(intent.putExtra("url", link))
+            context?.startService(intent.putExtra("url", it.download_link))
         }
 
         return rootView
@@ -77,10 +71,11 @@ class ImageDetailFragment : Fragment() {
         const val BROADCAST_ACTION = "servicebackbroadcast"
         const val STATUS_FINISH = 1
         const val PARAM_STATUS = "status"
+        const val IMAGE_NAME = "name"
     }
 
     fun setImage() {
-        val name = link.hashCode().toString()
+        val name = item?.download_link.hashCode().toString()
         val myImageFile = File(Environment.getExternalStorageDirectory().path + "/" + name)
         Log.d(LOG_TAG, "Path for file: " + myImageFile.absolutePath.toString())
         Picasso.get().load(myImageFile)
@@ -88,7 +83,7 @@ class ImageDetailFragment : Fragment() {
                 .onlyScaleDown()
                 .centerInside()
                 .placeholder(R.drawable.progress_animation)
-                .into(imageView)
+                .into(view?.image_detail)
         Log.d(LOG_TAG, "Image set")
     }
 }
