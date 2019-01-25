@@ -12,7 +12,6 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
 import com.`is`.daviondk.imagesearchapp.images.ImageContent
 import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.image_detail.view.*
@@ -21,9 +20,7 @@ import java.io.File
 
 class ImageDetailFragment : Fragment() {
     private var item: ImageContent.ImageItem? = null
-
     private val LOG_TAG = "fragmentLogs"
-
     lateinit var br: BroadcastReceiver
 
     override fun onCreate(savedInstanceState: Bundle?) {

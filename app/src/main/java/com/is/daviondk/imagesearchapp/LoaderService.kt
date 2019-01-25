@@ -5,13 +5,16 @@ import android.content.Intent
 import android.os.Environment
 import android.os.IBinder
 import android.util.Log
-import com.squareup.picasso.Picasso
+import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.FileOutputStream
+import java.net.URL
 
 class LoaderService : Service() {
     private val LOG_TAG = "serviceLogs"
     private var imageName = ""
-    private var dw: DownloadTarget? = null
+    private var curThread: Thread? = null
+    private var downloadedFlag = false
 
     override fun onCreate() {
         super.onCreate()
@@ -19,12 +22,14 @@ class LoaderService : Service() {
     }
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
-        downloadTask(intent)
+        val thread = Thread(Runnable { downloadTask(intent) })
+        curThread = thread
+        thread.start()
         return super.onStartCommand(intent, flags, startId)
     }
 
     override fun onDestroy() {
-        Picasso.get().cancelRequest(dw!!)
+        stopDownload()
         super.onDestroy()
         Log.d(LOG_TAG, "onDestroyService")
     }
@@ -57,17 +62,42 @@ class LoaderService : Service() {
 
     fun downloadImage(url: String) {
         imageName = url.hashCode().toString()
-        dw = DownloadTarget(imageName, this)
 
         if (!imageIsExist(imageName)) {
-            Picasso.get()
-                    .load(url)
-                    .into(dw!!)
+            load(url)
         } else {
             val int = Intent(ImageDetailFragment.BROADCAST_ACTION)
             int.putExtra(ImageDetailFragment.PARAM_STATUS, ImageDetailFragment.STATUS_FINISH)
             int.putExtra(ImageDetailFragment.IMAGE_NAME, imageName)
             sendBroadcast(int)
+            downloadedFlag = true
+            stopSelf()
+        }
+    }
+
+    private fun load(url: String?) {
+        URL(url).openConnection().run {
+            val byteArrayOutputStream = ByteArrayOutputStream()
+            getInputStream().copyTo(byteArrayOutputStream)
+            val file = File(Environment.getExternalStorageDirectory().path + "/" + imageName)
+            file.createNewFile()
+            FileOutputStream(file).use({ outputStream -> byteArrayOutputStream.writeTo(outputStream) })
+            val int = Intent(ImageDetailFragment.BROADCAST_ACTION)
+            int.putExtra(ImageDetailFragment.PARAM_STATUS, ImageDetailFragment.STATUS_FINISH)
+            int.putExtra(ImageDetailFragment.IMAGE_NAME, imageName)
+            sendBroadcast(int)
+            downloadedFlag = true
+            stopSelf()
+        }
+    }
+
+    fun stopDownload() {
+        if (!downloadedFlag) {
+            curThread?.interrupt()
+            val file = File(Environment.getExternalStorageDirectory().path + "/" + imageName)
+            if (file.exists()) {
+                file.delete()
+            }
         }
     }
 }

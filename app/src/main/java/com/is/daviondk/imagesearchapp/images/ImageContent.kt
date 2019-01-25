@@ -19,7 +19,7 @@ object ImageContent {
     init {
         Thread(Runnable {
             val downloadImagesTask = DownloadImagesAsyncTask()
-            downloadImagesTask.execute(URL("https://api.unsplash.com/search/photos/?query=cat&per_page=50&client_id=72fb6fd978959ab637fcc4d9f89a055b8849aad66c28a9aace5c376bbee3883c"))
+            downloadImagesTask.execute(URL("https://api.unsplash.com/search/photos/?query=dog&per_page=20&client_id=72fb6fd978959ab637fcc4d9f89a055b8849aad66c28a9aace5c376bbee3883c"))
             val jsonObject = downloadImagesTask.get()
             val jsonArray = jsonObject.getAsJsonArray("results")
             for (i in 0..min(jsonArray.size(), COUNT) - 1) {
