@@ -1,6 +1,8 @@
 package com.`is`.daviondk.imagesearchapp
 
 import android.app.Activity
+import android.arch.lifecycle.Observer
+import android.arch.lifecycle.ViewModelProviders
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -11,24 +13,20 @@ import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
-import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
-import android.widget.TextView
-import android.widget.Toast
-import com.`is`.daviondk.imagesearchapp.images.ImageContent
+import android.widget.*
 import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.activity_image_list.*
 import kotlinx.android.synthetic.main.image_list.*
 import kotlinx.android.synthetic.main.image_list_content.view.*
 
-
 class ImageListActivity : AppCompatActivity() {
 
     private var twoPane: Boolean = false
 
+    private lateinit var photoViewModel: PhotoViewModel
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_image_list)
@@ -40,8 +38,15 @@ class ImageListActivity : AppCompatActivity() {
             twoPane = true
         }
 
-        setupRecyclerView(image_list)
         setupPermissions()
+        setupRecyclerView(image_list, "random")
+
+        val searchButton = findViewById<Button>(R.id.searchButton)
+        val searchField = findViewById<EditText>(R.id.usernameField)
+
+        searchButton.setOnClickListener {
+            setupRecyclerView(image_list, searchField.text.toString())
+        }
     }
 
     private fun hasPermissions(context: Context?, permissions: Array<String>): Boolean {
@@ -55,11 +60,6 @@ class ImageListActivity : AppCompatActivity() {
         return true
     }
 
-    private fun getPermissionToast() {
-        val toast = Toast.makeText(applicationContext, "You can't load hi-res without permissions", Toast.LENGTH_SHORT)
-        toast.setGravity(Gravity.CENTER, 0, 0)
-        toast.show()
-    }
 
     private fun setupPermissions() {
         val mContext = this
@@ -74,14 +74,25 @@ class ImageListActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupRecyclerView(recyclerView: RecyclerView) {
+    private fun setupRecyclerView(recyclerView: RecyclerView, query: String) {
 
         recyclerView.layoutManager = LinearLayoutManager(this)  //--???
-        recyclerView.adapter = SimpleItemRecyclerViewAdapter(this, ImageContent.ITEMS, twoPane)
+
+        photoViewModel = ViewModelProviders.of(this).get(PhotoViewModel::class.java)
+
+        photoViewModel.fetchPhotos(query)
+
+        photoViewModel.photosLiveData.observe(this, Observer {
+            if (it != null) {
+                recyclerView.adapter = SimpleItemRecyclerViewAdapter(this, it, photoViewModel, twoPane)
+            }
+        })
+
     }
 
     class SimpleItemRecyclerViewAdapter(private val parentActivity: ImageListActivity,
-                                        private val values: List<ImageContent.ImageItem>,
+                                        private val values: MutableList<Photo>,
+                                        private val viewModel: PhotoViewModel,
                                         private val twoPane: Boolean) :
             RecyclerView.Adapter<SimpleItemRecyclerViewAdapter.ViewHolder>() {
 
@@ -89,11 +100,11 @@ class ImageListActivity : AppCompatActivity() {
 
         init {
             onClickListener = View.OnClickListener { v ->
-                val item = v.tag as ImageContent.ImageItem
+                val item = v.tag as Photo
                 if (twoPane) {
                     val fragment = ImageDetailFragment().apply {
                         arguments = Bundle().apply {
-                            putString(ImageDetailFragment.ARG_ITEM_ID, item.description)
+                            putString(ImageDetailFragment.ITEM_URL, item.urls?.full)
                         }
                     }
                     parentActivity.supportFragmentManager
@@ -102,7 +113,7 @@ class ImageListActivity : AppCompatActivity() {
                             .commit()
                 } else {
                     val intent = Intent(v.context, ImageDetailActivity::class.java).apply {
-                        putExtra(ImageDetailFragment.ARG_ITEM_ID, item.description)
+                        putExtra(ImageDetailFragment.ITEM_URL, item.urls?.full)
                     }
                     v.context.startActivity(intent)
                 }
@@ -120,17 +131,32 @@ class ImageListActivity : AppCompatActivity() {
             holder.contentView.text = item.description
 
             ContextCompat.checkSelfPermission(parentActivity, "INTERNET")
-            Picasso.get().load(item.preview).into(holder.imageView)
+            Picasso.get().load(item.urls?.thumb).into(holder.imageView)
             with(holder.itemView) {
                 tag = item
                 setOnClickListener(onClickListener)
             }
+
+            holder.checkBox.isChecked = viewModel.isFavourite(item)
+            holder.checkBox.setOnCheckedChangeListener { buttonView, isChecked ->
+                if (isChecked) {
+                    viewModel.addFavourite(item)
+                } else {
+                    viewModel.removeFavourite(item)
+                }
+            }
+
         }
 
         override fun getItemCount() = values.size
         inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
             val imageView: ImageView = view.imageView2
             val contentView: TextView = view.content
+            val checkBox: CheckBox = view.favourite
         }
+    }
+
+    companion object {
+        private const val LOG_TAG: String = "ImageList"
     }
 }

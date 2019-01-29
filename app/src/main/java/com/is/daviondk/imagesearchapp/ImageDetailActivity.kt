@@ -7,7 +7,6 @@ import android.view.MenuItem
 import kotlinx.android.synthetic.main.activity_image_detail.*
 
 class ImageDetailActivity : AppCompatActivity() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_image_detail)
@@ -18,8 +17,8 @@ class ImageDetailActivity : AppCompatActivity() {
         if (savedInstanceState == null) {
             val fragment = ImageDetailFragment().apply {
                 arguments = Bundle().apply {
-                    putString(ImageDetailFragment.ARG_ITEM_ID,
-                            intent.getStringExtra(ImageDetailFragment.ARG_ITEM_ID))
+                    putString(ImageDetailFragment.ITEM_URL,
+                            intent.getStringExtra(ImageDetailFragment.ITEM_URL))
                 }
             }
 
